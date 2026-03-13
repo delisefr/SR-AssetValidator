@@ -10,60 +10,114 @@ Validates OpenUSD assets against official SimReady Foundation profiles by loadin
 - **3 profiles**: Prop-Robotics-Neutral v1/v2, Prop-Robotics-Physx v1
 - **Only dependency**: `usd-core` (pip) — falls back to `openusd` (conda-forge) on aarch64
 
-## Quick Start
+## Prerequisites
 
-### Setup
+- Python 3.10+
+- [Git LFS](https://git-lfs.com/) (for pulling sample USD assets)
 
-```bash
-# Linux / macOS
-./setup.sh
+## Setup
 
-# Windows
+### Windows
+
+```cmd
+git clone https://github.com/delisefr/SR-AssetValidator.git
+cd SR-AssetValidator
 setup.bat
 ```
 
-This installs `usd-core` and `pytest` via pip, clones `nvidia/simready-foundation`, and pulls LFS assets. On aarch64 (where pip wheels aren't available), it falls back to conda-forge.
+This will:
+1. Clone `nvidia/simready-foundation` for specs and sample assets
+2. Install `usd-core` and `pytest` via pip
+3. Pull LFS assets
 
-### Run
+### Linux / macOS
+
+```bash
+git clone https://github.com/delisefr/SR-AssetValidator.git
+cd SR-AssetValidator
+./setup.sh
+```
+
+This will:
+1. Clone `nvidia/simready-foundation` for specs and sample assets
+2. Install `usd-core` and `pytest` via pip
+3. If pip fails (aarch64/ARM64 — no wheels available), falls back to conda via [Miniforge](https://github.com/conda-forge/miniforge)
+4. Pull LFS assets
+
+> **Note (aarch64 only):** If the setup falls back to conda, activate the environment before running:
+> ```bash
+> source $(conda info --base)/bin/activate sr_validator
+> ```
+
+### Manual Setup
+
+```bash
+pip install usd-core pytest
+git clone https://github.com/nvidia/simready-foundation.git
+cd simready-foundation && git lfs pull && cd ..
+```
+
+## Usage
+
+### Windows
+
+```cmd
+:: Validate a single asset
+python -m sr_asset_validator.cli path\to\asset.usd -v
+
+:: Run the sample script
+run_sample.bat
+
+:: Run tests
+python -m pytest tests\ -v
+```
+
+### Linux / macOS
 
 ```bash
 # Validate a single asset
 python -m sr_asset_validator.cli path/to/asset.usd -v
 
-# Validate all foundation sample props
+# Run the sample script
 ./run_sample.sh
 
 # Run tests
 python -m pytest tests/ -v
 ```
 
-## CLI Usage
+## CLI Reference
 
 ```
-sr-validate [options] <paths...>
+python -m sr_asset_validator.cli [options] <paths...>
+
+Arguments:
+  paths                 USD file(s) or directories to validate
 
 Options:
-  --profile NAME    Profile to validate against (default: Prop-Robotics-Neutral-v1)
-  --format FORMAT   Output format: console or json
-  -v, --verbose     Show all rules including passing ones
-  --list-rules      List all implemented rules with requirement codes
-  --list-profiles   List available profiles
+  --profile NAME        Profile to validate against (default: Prop-Robotics-Neutral-v1)
+  --format FORMAT       Output format: console or json
+  -v, --verbose         Show all rules including passing ones
+  --list-rules          List all implemented rules with requirement codes
+  --list-profiles       List available profiles
 ```
 
 ### Examples
 
 ```bash
-# Validate with verbose output
+# Verbose output showing all rules
 python -m sr_asset_validator.cli asset.usd -v
 
-# Validate against PhysX profile
+# Validate against the PhysX profile
 python -m sr_asset_validator.cli asset.usd --profile Prop-Robotics-Physx-v1
 
-# JSON output for CI
+# JSON output (for CI pipelines)
 python -m sr_asset_validator.cli asset.usd --format json
 
-# Validate a directory
+# Validate an entire directory
 python -m sr_asset_validator.cli ./my_assets/
+
+# List all rules
+python -m sr_asset_validator.cli --list-rules
 ```
 
 ## Profiles
@@ -177,34 +231,39 @@ python -m sr_asset_validator.cli ./my_assets/
                     │  └─────────────────────────────────────────────┘   │
                     └───────────────────────────────────────────────────┘
 
-  Dependencies:  openusd (conda-forge) ──▶ pxr.Usd, pxr.UsdGeom,
-                                            pxr.UsdShade, pxr.UsdPhysics
+  Dependencies:  usd-core (pip) ──▶ pxr.Usd, pxr.UsdGeom,
+                                     pxr.UsdShade, pxr.UsdPhysics
                  NO Kit, NO Carbonite, NO Omni USD Resolver
 ```
 
 ### File Structure
 
 ```
-sr_asset_validator/
-├── core/               # Engine, BaseRule, Registry, Spec loader
-│   ├── engine.py       # ValidationEngine + profile resolver
-│   ├── registry.py     # Maps requirement codes to rule classes
-│   ├── rule.py         # BaseRule ABC with requirement_code
-│   ├── spec.py         # Loads capabilities/features from JSON configs
-│   └── stage_loader.py # USD stage loading via pxr
-├── rules/              # Rule implementations by category
-│   ├── basic/          # HI.*, UN.* (hierarchy, units)
-│   ├── geometry/       # VG.* (mesh topology, normals, extents)
-│   ├── material/       # VM.* (bindings, shaders, MDL)
-│   ├── physics/        # RB.*, RB.COL.*, RB.MB.* (rigid bodies, colliders)
-│   ├── layout/         # HI.002, HI.006 (prim hierarchy)
-│   └── simready/       # SL.* (semantic labels)
-├── specs/              # Profile definitions loaded from simready-foundation
-├── cli.py              # Command-line interface
-└── report.py           # Console + JSON formatters
+SR-AssetValidator/
+├── setup.sh / setup.bat           # One-command setup (Linux/Windows)
+├── run_sample.sh / run_sample.bat # Run validation on foundation samples
+├── requirements.txt               # pip dependencies
+├── pyproject.toml                 # Project config
+├── sr_asset_validator/
+│   ├── core/                      # Engine, BaseRule, Registry, Spec loader
+│   │   ├── engine.py              # ValidationEngine + profile resolver
+│   │   ├── registry.py            # Maps requirement codes to rule classes
+│   │   ├── rule.py                # BaseRule ABC with requirement_code
+│   │   ├── spec.py                # Loads capabilities/features from JSON
+│   │   └── stage_loader.py        # USD stage loading via pxr
+│   ├── rules/                     # Rule implementations by category
+│   │   ├── basic/                 # HI.*, UN.* (hierarchy, units)
+│   │   ├── geometry/              # VG.* (mesh topology, normals, extents)
+│   │   ├── material/              # VM.* (bindings, shaders, MDL)
+│   │   ├── physics/               # RB.* (rigid bodies, colliders)
+│   │   ├── layout/                # HI.002, HI.006 (prim hierarchy)
+│   │   └── simready/              # SL.* (semantic labels)
+│   ├── specs/                     # Profile definitions
+│   ├── cli.py                     # Command-line interface
+│   └── report.py                  # Console + JSON formatters
+├── tests/                         # Unit + integration tests
+└── simready-foundation/           # Cloned at setup (git-ignored)
 ```
-
-Specs are loaded at runtime from `simready-foundation/nv_core/sr_specs/config/*.json` (capabilities) and `docs/features/*.json` (feature definitions).
 
 ## Adding Rules
 
