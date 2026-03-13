@@ -1,6 +1,13 @@
 #!/bin/bash
-source /home/delisef/miniforge3/bin/activate sr_validator
-cd /home/delisef/AIProjects/SR_AssetValidator
+cd "$(dirname "$0")"
+
+# Activate conda env if pxr not available in current env
+python -c "from pxr import Usd" 2>/dev/null || {
+    source "$HOME/miniforge3/bin/activate" sr_validator 2>/dev/null || {
+        echo "Error: pxr (OpenUSD) not found. Run ./setup.sh first."
+        exit 1
+    }
+}
 
 echo "=== Validating apple_a01 (simready_usd) ==="
 python -m sr_asset_validator.cli \

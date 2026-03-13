@@ -8,7 +8,7 @@ Validates OpenUSD assets against official SimReady Foundation profiles by loadin
 
 - **30 rule implementations** mapped to official requirement codes (HI.\*, UN.\*, VG.\*, VM.\*, RB.\*)
 - **3 profiles**: Prop-Robotics-Neutral v1/v2, Prop-Robotics-Physx v1
-- **Only dependency**: `openusd` (via conda-forge) — works on x86_64 and aarch64
+- **Only dependency**: `usd-core` (pip) — falls back to `openusd` (conda-forge) on aarch64
 
 ## Quick Start
 
@@ -22,13 +22,11 @@ Validates OpenUSD assets against official SimReady Foundation profiles by loadin
 setup.bat
 ```
 
-This installs Miniforge (if needed), creates a `sr_validator` conda env with OpenUSD and pytest, clones `nvidia/simready-foundation`, and pulls LFS assets.
+This installs `usd-core` and `pytest` via pip, clones `nvidia/simready-foundation`, and pulls LFS assets. On aarch64 (where pip wheels aren't available), it falls back to conda-forge.
 
 ### Run
 
 ```bash
-source $(conda info --base)/bin/activate sr_validator
-
 # Validate a single asset
 python -m sr_asset_validator.cli path/to/asset.usd -v
 
